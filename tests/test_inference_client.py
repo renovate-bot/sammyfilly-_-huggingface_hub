@@ -287,8 +287,10 @@ class TestResolveURL(InferenceClientTest):
     def test_method_level_has_priority(self) -> None:
         # Priority to method-level
         self.assertEqual(
-            InferenceClient(model=self.FAKE_ENDPOINT + "_instance")._resolve_url(model=self.FAKE_ENDPOINT + "_method"),
-            self.FAKE_ENDPOINT + "_method",
+            InferenceClient(model=f"{self.FAKE_ENDPOINT}_instance")._resolve_url(
+                model=f"{self.FAKE_ENDPOINT}_method"
+            ),
+            f"{self.FAKE_ENDPOINT}_method",
         )
 
     def test_recommended_model_from_supported_task(self) -> None:

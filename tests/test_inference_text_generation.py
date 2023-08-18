@@ -178,9 +178,11 @@ class TestTextGenerationClientVCR(unittest.TestCase):
             self.client.text_generation("test", max_new_tokens=10_000)
 
     def test_generate_stream_no_details(self):
-        responses = [
-            response for response in self.client.text_generation("test", max_new_tokens=1, stream=True, details=True)
-        ]
+        responses = list(
+            self.client.text_generation(
+                "test", max_new_tokens=1, stream=True, details=True
+            )
+        )
 
         assert len(responses) == 1
         response = responses[0]
@@ -191,9 +193,11 @@ class TestTextGenerationClientVCR(unittest.TestCase):
         assert response.details.seed is None
 
     def test_generate_stream_with_details(self):
-        responses = [
-            response for response in self.client.text_generation("test", max_new_tokens=1, stream=True, details=True)
-        ]
+        responses = list(
+            self.client.text_generation(
+                "test", max_new_tokens=1, stream=True, details=True
+            )
+        )
 
         assert len(responses) == 1
         response = responses[0]

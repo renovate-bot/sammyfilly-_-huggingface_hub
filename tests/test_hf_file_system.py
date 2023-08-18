@@ -56,98 +56,129 @@ class HfFileSystemTests(unittest.TestCase):
     @retry_endpoint
     def test_glob(self):
         self.assertEqual(
-            sorted(self.hffs.glob(self.hf_path + "/*")),
-            sorted([self.hf_path + "/.gitattributes", self.hf_path + "/data"]),
+            sorted(self.hffs.glob(f"{self.hf_path}/*")),
+            sorted([f"{self.hf_path}/.gitattributes", f"{self.hf_path}/data"]),
         )
 
         self.assertEqual(
-            sorted(self.hffs.glob(self.hf_path + "/*", revision="main")),
-            sorted([self.hf_path + "/.gitattributes", self.hf_path + "/data"]),
+            sorted(self.hffs.glob(f"{self.hf_path}/*", revision="main")),
+            sorted([f"{self.hf_path}/.gitattributes", f"{self.hf_path}/data"]),
         )
         self.assertEqual(
-            sorted(self.hffs.glob(self.hf_path + "@main" + "/*")),
-            sorted([self.hf_path + "@main" + "/.gitattributes", self.hf_path + "@main" + "/data"]),
+            sorted(self.hffs.glob(f"{self.hf_path}@main/*")),
+            sorted(
+                [
+                    f"{self.hf_path}@main/.gitattributes",
+                    f"{self.hf_path}@main/data",
+                ]
+            ),
         )
 
     @retry_endpoint
     def test_file_type(self):
         self.assertTrue(
-            self.hffs.isdir(self.hf_path + "/data") and not self.hffs.isdir(self.hf_path + "/.gitattributes")
+            self.hffs.isdir(f"{self.hf_path}/data")
+            and not self.hffs.isdir(f"{self.hf_path}/.gitattributes")
         )
         self.assertTrue(
-            self.hffs.isfile(self.hf_path + "/data/text_data.txt") and not self.hffs.isfile(self.hf_path + "/data")
+            self.hffs.isfile(f"{self.hf_path}/data/text_data.txt")
+            and not self.hffs.isfile(f"{self.hf_path}/data")
         )
 
     @retry_endpoint
     def test_remove_file(self):
-        self.hffs.rm_file(self.hf_path + "/data/text_data.txt")
-        self.assertEqual(self.hffs.glob(self.hf_path + "/data/*"), [self.hf_path + "/data/binary_data.bin"])
+        self.hffs.rm_file(f"{self.hf_path}/data/text_data.txt")
+        self.assertEqual(
+            self.hffs.glob(f"{self.hf_path}/data/*"),
+            [f"{self.hf_path}/data/binary_data.bin"],
+        )
 
     @retry_endpoint
     def test_remove_directory(self):
-        self.hffs.rm(self.hf_path + "/data", recursive=True)
-        self.assertNotIn(self.hf_path + "/data", self.hffs.ls(self.hf_path))
+        self.hffs.rm(f"{self.hf_path}/data", recursive=True)
+        self.assertNotIn(f"{self.hf_path}/data", self.hffs.ls(self.hf_path))
 
     @retry_endpoint
     def test_read_file(self):
-        with self.hffs.open(self.hf_path + "/data/text_data.txt", "r") as f:
+        with self.hffs.open(f"{self.hf_path}/data/text_data.txt", "r") as f:
             self.assertEqual(f.read(), "dummy text data")
 
     @retry_endpoint
     def test_write_file(self):
         data = "new text data"
-        with self.hffs.open(self.hf_path + "/data/new_text_data.txt", "w") as f:
+        with self.hffs.open(f"{self.hf_path}/data/new_text_data.txt", "w") as f:
             f.write(data)
-        self.assertIn(self.hf_path + "/data/new_text_data.txt", self.hffs.glob(self.hf_path + "/data/*"))
-        with self.hffs.open(self.hf_path + "/data/new_text_data.txt", "r") as f:
+        self.assertIn(
+            f"{self.hf_path}/data/new_text_data.txt",
+            self.hffs.glob(f"{self.hf_path}/data/*"),
+        )
+        with self.hffs.open(f"{self.hf_path}/data/new_text_data.txt", "r") as f:
             self.assertEqual(f.read(), data)
 
     @retry_endpoint
     def test_write_file_multiple_chunks(self):
         # TODO: try with files between 10 and 50MB (as of 16 March 2023 I was getting 504 errors on hub-ci)
         data = "a" * (4 << 20)  # 4MB
-        with self.hffs.open(self.hf_path + "/data/new_text_data_big.txt", "w") as f:
+        with self.hffs.open(f"{self.hf_path}/data/new_text_data_big.txt", "w") as f:
             for _ in range(2):  # 8MB in total
                 f.write(data)
 
-        self.assertIn(self.hf_path + "/data/new_text_data_big.txt", self.hffs.glob(self.hf_path + "/data/*"))
-        with self.hffs.open(self.hf_path + "/data/new_text_data_big.txt", "r") as f:
+        self.assertIn(
+            f"{self.hf_path}/data/new_text_data_big.txt",
+            self.hffs.glob(f"{self.hf_path}/data/*"),
+        )
+        with self.hffs.open(f"{self.hf_path}/data/new_text_data_big.txt", "r") as f:
             for _ in range(2):
                 self.assertEqual(f.read(len(data)), data)
 
     @unittest.skip("Not implemented yet")
     @retry_endpoint
     def test_append_file(self):
-        with self.hffs.open(self.hf_path + "/data/text_data.txt", "a") as f:
+        with self.hffs.open(f"{self.hf_path}/data/text_data.txt", "a") as f:
             f.write(" appended text")
 
-        with self.hffs.open(self.hf_path + "/data/text_data.txt", "r") as f:
+        with self.hffs.open(f"{self.hf_path}/data/text_data.txt", "r") as f:
             self.assertEqual(f.read(), "dummy text data appended text")
 
     @retry_endpoint
     def test_copy_file(self):
         # Non-LFS file
-        self.assertIsNone(self.hffs.info(self.hf_path + "/data/text_data.txt")["lfs"])
-        self.hffs.cp_file(self.hf_path + "/data/text_data.txt", self.hf_path + "/data/text_data_copy.txt")
-        with self.hffs.open(self.hf_path + "/data/text_data_copy.txt", "r") as f:
+        self.assertIsNone(self.hffs.info(f"{self.hf_path}/data/text_data.txt")["lfs"])
+        self.hffs.cp_file(
+            f"{self.hf_path}/data/text_data.txt",
+            f"{self.hf_path}/data/text_data_copy.txt",
+        )
+        with self.hffs.open(f"{self.hf_path}/data/text_data_copy.txt", "r") as f:
             self.assertEqual(f.read(), "dummy text data")
-        self.assertIsNone(self.hffs.info(self.hf_path + "/data/text_data_copy.txt")["lfs"])
+        self.assertIsNone(
+            self.hffs.info(f"{self.hf_path}/data/text_data_copy.txt")["lfs"]
+        )
         # LFS file
-        self.assertIsNotNone(self.hffs.info(self.hf_path + "/data/binary_data.bin")["lfs"])
-        self.hffs.cp_file(self.hf_path + "/data/binary_data.bin", self.hf_path + "/data/binary_data_copy.bin")
-        with self.hffs.open(self.hf_path + "/data/binary_data_copy.bin", "rb") as f:
+        self.assertIsNotNone(
+            self.hffs.info(f"{self.hf_path}/data/binary_data.bin")["lfs"]
+        )
+        self.hffs.cp_file(
+            f"{self.hf_path}/data/binary_data.bin",
+            f"{self.hf_path}/data/binary_data_copy.bin",
+        )
+        with self.hffs.open(f"{self.hf_path}/data/binary_data_copy.bin", "rb") as f:
             self.assertEqual(f.read(), b"dummy binary data")
-        self.assertIsNotNone(self.hffs.info(self.hf_path + "/data/binary_data_copy.bin")["lfs"])
+        self.assertIsNotNone(
+            self.hffs.info(f"{self.hf_path}/data/binary_data_copy.bin")["lfs"]
+        )
 
     @retry_endpoint
     def test_modified_time(self):
-        self.assertIsInstance(self.hffs.modified(self.hf_path + "/data/text_data.txt"), datetime.datetime)
+        self.assertIsInstance(
+            self.hffs.modified(f"{self.hf_path}/data/text_data.txt"),
+            datetime.datetime,
+        )
         # should fail on a non-existing file
         with self.assertRaises(FileNotFoundError):
-            self.hffs.modified(self.hf_path + "/data/not_existing_file.txt")
+            self.hffs.modified(f"{self.hf_path}/data/not_existing_file.txt")
         # should fail on a directory
         with self.assertRaises(IsADirectoryError):
-            self.hffs.modified(self.hf_path + "/data")
+            self.hffs.modified(f"{self.hf_path}/data")
 
     @retry_endpoint
     def test_initialize_from_fsspec(self):
@@ -161,7 +192,7 @@ class HfFileSystemTests(unittest.TestCase):
         self.assertIsInstance(fs, HfFileSystem)
         self.assertEqual(fs._api.endpoint, ENDPOINT_STAGING)
         self.assertEqual(fs.token, TOKEN)
-        self.assertEqual(paths, [self.hf_path + "/data/text_data.txt"])
+        self.assertEqual(paths, [f"{self.hf_path}/data/text_data.txt"])
 
         fs, _, paths = fsspec.get_fs_token_paths(f"hf://{self.repo_id}/data/text_data.txt")
         self.assertIsInstance(fs, HfFileSystem)
@@ -182,7 +213,7 @@ class HfFileSystemTests(unittest.TestCase):
 
     @retry_endpoint
     def test_list_data_directory_no_revision(self):
-        files = self.hffs.ls(self.hf_path + "/data")
+        files = self.hffs.ls(f"{self.hf_path}/data")
         self.assertEqual(len(files), 2)
 
         self.assertEqual(files[0]["type"], "file")
@@ -200,13 +231,9 @@ class HfFileSystemTests(unittest.TestCase):
 
     @retry_endpoint
     def test_list_data_directory_with_revision(self):
-        files = self.hffs.ls(self.hf_path + "@refs%2Fpr%2F1" + "/data")
+        files = self.hffs.ls(f"{self.hf_path}@refs%2Fpr%2F1/data")
 
-        for test_name, files in {
-            "rev_in_path": self.hffs.ls(self.hf_path + "@refs%2Fpr%2F1" + "/data"),
-            "rev_as_arg": self.hffs.ls(self.hf_path + "/data", revision="refs/pr/1"),
-            "rev_in_path_and_as_arg": self.hffs.ls(self.hf_path + "@refs%2Fpr%2F1" + "/data", revision="refs/pr/1"),
-        }.items():
+        for test_name, files in {"rev_in_path": self.hffs.ls(f"{self.hf_path}@refs%2Fpr%2F1/data"), "rev_as_arg": self.hffs.ls(f"{self.hf_path}/data", revision="refs/pr/1"), "rev_in_path_and_as_arg": self.hffs.ls(f"{self.hf_path}@refs%2Fpr%2F1/data", revision="refs/pr/1")}.items():
             with self.subTest(test_name):
                 self.assertEqual(len(files), 1)  # only one file in PR
                 self.assertEqual(files[0]["type"], "file")
@@ -249,7 +276,7 @@ def test_resolve_path(
     path_in_repo: str,
 ):
     fs = HfFileSystem()
-    path = root_path + "/" + path_in_repo if path_in_repo else root_path
+    path = f"{root_path}/{path_in_repo}" if path_in_repo else root_path
 
     def mock_repo_info(repo_id: str, *, revision: str, repo_type: str, **kwargs):
         if repo_id not in ["gpt2", "squad", "username/my_dataset", "username/my_model"]:
@@ -279,6 +306,6 @@ def test_access_repositories_lists(not_supported_path):
     with pytest.raises(NotImplementedError):
         fs.ls(not_supported_path)
     with pytest.raises(NotImplementedError):
-        fs.glob(not_supported_path + "/")
+        fs.glob(f"{not_supported_path}/")
     with pytest.raises(NotImplementedError):
         fs.open(not_supported_path)

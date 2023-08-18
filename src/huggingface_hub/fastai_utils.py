@@ -140,13 +140,9 @@ def _check_fastai_fastcore_pyproject_versions(
         return
     package_versions = build_system_toml["requires"]
 
-    # Extracts contains fastai and fastcore versions from `pyproject.toml` if available.
-    # If the package is specified but not the version (e.g. "fastai" instead of "fastai=2.4"), the default versions are the highest.
-    fastai_packages = [pck for pck in package_versions if pck.startswith("fastai")]
-    if len(fastai_packages) == 0:
-        logger.warning("The repository does not have a fastai version specified in the `pyproject.toml`.")
-    # fastai_version is an empty string if not specified
-    else:
+    if fastai_packages := [
+        pck for pck in package_versions if pck.startswith("fastai")
+    ]:
         fastai_version = str(fastai_packages[0]).partition("=")[2]
         if fastai_version != "" and version.Version(fastai_version) < version.Version(fastai_min_version):
             raise ImportError(
@@ -155,11 +151,11 @@ def _check_fastai_fastcore_pyproject_versions(
                 f" {fastai_version} which is incompatible."
             )
 
-    fastcore_packages = [pck for pck in package_versions if pck.startswith("fastcore")]
-    if len(fastcore_packages) == 0:
-        logger.warning("The repository does not have a fastcore version specified in the `pyproject.toml`.")
-    # fastcore_version is an empty string if not specified
     else:
+        logger.warning("The repository does not have a fastai version specified in the `pyproject.toml`.")
+    if fastcore_packages := [
+        pck for pck in package_versions if pck.startswith("fastcore")
+    ]:
         fastcore_version = str(fastcore_packages[0]).partition("=")[2]
         if fastcore_version != "" and version.Version(fastcore_version) < version.Version(fastcore_min_version):
             raise ImportError(
@@ -167,6 +163,9 @@ def _check_fastai_fastcore_pyproject_versions(
                 f" fastcore>={fastcore_min_version} version, but you are using fastcore"
                 f" version {fastcore_version} which is incompatible."
             )
+
+    else:
+        logger.warning("The repository does not have a fastcore version specified in the `pyproject.toml`.")
 
 
 README_TEMPLATE = """---

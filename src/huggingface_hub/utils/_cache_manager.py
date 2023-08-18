@@ -437,7 +437,7 @@ class HFCacheInfo:
                     repos_with_revisions[repo].add(revision)
                     hashes_to_delete.remove(revision.commit_hash)
 
-        if len(hashes_to_delete) > 0:
+        if hashes_to_delete:
             logger.warning(f"Revision(s) not found - cannot delete them: {', '.join(hashes_to_delete)}")
 
         delete_strategy_blobs: Set[Path] = set()
@@ -697,7 +697,7 @@ def _scan_cached_repo(repo_path: Path) -> CachedRepoInfo:
 
         # Last modified is either the last modified blob file or the revision folder
         # itself if it is empty
-        if len(cached_files) > 0:
+        if cached_files:
             revision_last_modified = max(blob_stats[file.blob_path].st_mtime for file in cached_files)
         else:
             revision_last_modified = revision_path.stat().st_mtime
@@ -708,7 +708,8 @@ def _scan_cached_repo(repo_path: Path) -> CachedRepoInfo:
                 files=frozenset(cached_files),
                 refs=frozenset(refs_by_hash.pop(revision_path.name, set())),
                 size_on_disk=sum(
-                    blob_stats[blob_path].st_size for blob_path in set(file.blob_path for file in cached_files)
+                    blob_stats[blob_path].st_size
+                    for blob_path in {file.blob_path for file in cached_files}
                 ),
                 snapshot_path=revision_path,
                 last_modified=revision_last_modified,
@@ -716,14 +717,14 @@ def _scan_cached_repo(repo_path: Path) -> CachedRepoInfo:
         )
 
     # Check that all refs referred to an existing revision
-    if len(refs_by_hash) > 0:
+    if refs_by_hash:
         raise CorruptedCacheException(
             f"Reference(s) refer to missing commit hashes: {dict(refs_by_hash)} ({repo_path})."
         )
 
     # Last modified is either the last modified blob file or the repo folder itself if
     # no blob files has been found. Same for last accessed.
-    if len(blob_stats) > 0:
+    if blob_stats:
         repo_last_accessed = max(stat.st_atime for stat in blob_stats.values())
         repo_last_modified = max(stat.st_mtime for stat in blob_stats.values())
     else:

@@ -217,10 +217,9 @@ class AsyncInferenceClient:
                     response.raise_for_status()
                     if stream:
                         return _async_yield_from(client, response)
-                    else:
-                        content = await response.read()
-                        await client.close()
-                        return content
+                    content = await response.read()
+                    await client.close()
+                    return content
                 except TimeoutError as error:
                     await client.close()
                     # Convert any `TimeoutError` to a `InferenceTimeoutError`
@@ -1080,7 +1079,7 @@ class AsyncInferenceClient:
                 if payload["parameters"][key] is not None:
                     ignored_parameters.append(key)
                 del payload["parameters"][key]
-            if len(ignored_parameters) > 0:
+            if ignored_parameters:
                 warnings.warn(
                     "API endpoint/model for text-generation is not served via TGI. Ignoring parameters"
                     f" {ignored_parameters}.",

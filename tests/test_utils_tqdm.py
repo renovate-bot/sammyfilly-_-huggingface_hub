@@ -127,11 +127,11 @@ class TestTqdmUtils(unittest.TestCase):
 
             with tqdm_stream_file(filepath) as f:
                 while True:
-                    data = f.read(100)
-                    if not data:
-                        break
-                    time.sleep(0.001)  # Simulate a delay between each chunk
+                    if data := f.read(100):
+                        time.sleep(0.001)  # Simulate a delay between each chunk
 
+                    else:
+                        break
             captured = self.capsys.readouterr()
             self.assertEqual(captured.out, "")
             self.assertIn("config.json: 100%", captured.err)  # log file name

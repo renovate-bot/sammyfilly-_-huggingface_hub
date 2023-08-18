@@ -207,7 +207,7 @@ class CommitOperationAdd:
         config.json: 100%|█████████████████████████| 8.19k/8.19k [00:02<00:00, 3.72kB/s]
         ```
         """
-        if isinstance(self.path_or_fileobj, str) or isinstance(self.path_or_fileobj, Path):
+        if isinstance(self.path_or_fileobj, (str, Path)):
             if with_tqdm:
                 with tqdm_stream_file(self.path_or_fileobj) as file:
                     yield file
@@ -233,13 +233,11 @@ class CommitOperationAdd:
 
 def _validate_path_in_repo(path_in_repo: str) -> str:
     # Validate `path_in_repo` value to prevent a server-side issue
-    if path_in_repo.startswith("/"):
-        path_in_repo = path_in_repo[1:]
+    path_in_repo = path_in_repo.removeprefix("/")
     if path_in_repo == "." or path_in_repo == ".." or path_in_repo.startswith("../"):
         raise ValueError(f"Invalid `path_in_repo` in CommitOperation: '{path_in_repo}'")
-    if path_in_repo.startswith("./"):
-        path_in_repo = path_in_repo[2:]
-    if any(part == ".git" for part in path_in_repo.split("/")):
+    path_in_repo = path_in_repo.removeprefix("./")
+    if ".git" in path_in_repo.split("/"):
         raise ValueError(
             "Invalid `path_in_repo` in CommitOperation: cannot update files under a '.git/' folder (path:"
             f" '{path_in_repo}')."
@@ -371,7 +369,7 @@ def upload_lfs_files(
         else:
             filtered_actions.append(action)
 
-    if len(filtered_actions) == 0:
+    if not filtered_actions:
         logger.debug("No LFS files to upload.")
         return
 

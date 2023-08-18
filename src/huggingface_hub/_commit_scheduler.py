@@ -120,7 +120,7 @@ class CommitScheduler:
         self.last_uploaded: Dict[Path, float] = {}  # key is local path, value is timestamp
 
         # Scheduler
-        if not every > 0:
+        if every <= 0:
             raise ValueError(f"'every' must be a positive integer, not '{every}'.")
         self.lock = Lock()
         self.every = every
@@ -214,7 +214,7 @@ class CommitScheduler:
                     )
 
         # Return if nothing to upload
-        if len(files_to_upload) == 0:
+        if not files_to_upload:
             logger.debug("Dropping schedule commit: no changed file to upload.")
             return None
 
@@ -280,7 +280,7 @@ class PartialFileIO(BytesIO):
         return self._size_limit
 
     def __getattribute__(self, name: str):
-        if name.startswith("_") or name in ("read", "tell", "seek"):  # only 3 public methods supported
+        if name.startswith("_") or name in {"read", "tell", "seek"}:  # only 3 public methods supported
             return super().__getattribute__(name)
         raise NotImplementedError(f"PartialFileIO does not support '{name}'.")
 
@@ -299,9 +299,7 @@ class PartialFileIO(BytesIO):
             __whence = SEEK_SET
 
         pos = self._file.seek(__offset, __whence)
-        if pos > self._size_limit:
-            return self._file.seek(self._size_limit)
-        return pos
+        return self._file.seek(self._size_limit) if pos > self._size_limit else pos
 
     def read(self, __size: Optional[int] = -1) -> bytes:
         """Read at most `__size` bytes from the file.

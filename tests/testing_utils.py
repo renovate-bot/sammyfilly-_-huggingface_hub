@@ -95,7 +95,7 @@ def parse_int_from_env(key, default=None):
         try:
             _value = int(value)
         except ValueError:
-            raise ValueError("If set, {} must be a int.".format(key))
+            raise ValueError(f"If set, {key} must be a int.")
     return _value
 
 
@@ -414,10 +414,10 @@ def handle_injection_in_test(fn: Callable) -> Callable:
 
     @wraps(fn)
     def _inner(*args, **kwargs):
-        assert kwargs == {}
+        assert not kwargs
 
         # Initialize new dict at least with `self`.
-        assert len(args) > 0
+        assert args
         assert len(parameters) > 0
         new_kwargs = {"self": args[0]}
 
@@ -425,7 +425,7 @@ def handle_injection_in_test(fn: Callable) -> Callable:
         mocks = {}
         for value in args[1:]:
             assert isinstance(value, Mock)
-            mock_name = "mock_" + value._extract_mock_name()
+            mock_name = f"mock_{value._extract_mock_name()}"
             mocks[mock_name] = value
 
         # Check which mocks are expected

@@ -71,9 +71,7 @@ class Discussion:
         If this is a Pull Request , returns the git reference to which changes can be pushed.
         Returns `None` otherwise.
         """
-        if self.is_pull_request:
-            return f"refs/pr/{self.num}"
-        return None
+        return f"refs/pr/{self.num}" if self.is_pull_request else None
 
     @property
     def url(self) -> str:

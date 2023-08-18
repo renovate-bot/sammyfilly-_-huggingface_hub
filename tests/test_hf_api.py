@@ -850,14 +850,13 @@ class CommitApiTest(HfApiCommonTest):
         REPO_NAME = repo_name("create_commit_huge_regular_files")
         self._api.create_repo(repo_id=REPO_NAME, exist_ok=False)
         try:
-            operations = []
-            for num in range(12):
-                operations.append(
-                    CommitOperationAdd(
-                        path_in_repo=f"file-{num}.text",
-                        path_or_fileobj=b"Hello regular " + b"a" * 1024 * 1024 * 9,
-                    )
+            operations = [
+                CommitOperationAdd(
+                    path_in_repo=f"file-{num}.text",
+                    path_or_fileobj=b"Hello regular " + b"a" * 1024 * 1024 * 9,
                 )
+                for num in range(12)
+            ]
             self._api.create_commit(
                 operations=operations,  # 12*9MB regular => too much for "old" method
                 commit_message="Test create_commit with huge regular files",
@@ -884,15 +883,14 @@ class CommitApiTest(HfApiCommonTest):
         REPO_NAME = repo_name("commit_preflight_lots_of_lfs_files")
         self._api.create_repo(repo_id=REPO_NAME, exist_ok=False)
         try:
-            operations = []
-            for num in range(1300):
-                operations.append(
-                    CommitOperationAdd(
-                        path_in_repo=f"file-{num}.bin",  # considered as LFS
-                        path_or_fileobj=b"Hello LFS" + b"a" * 2048,  # big enough sample
-                    )
+            operations = [
+                CommitOperationAdd(
+                    path_in_repo=f"file-{num}.bin",  # considered as LFS
+                    path_or_fileobj=b"Hello LFS"
+                    + b"a" * 2048,  # big enough sample
                 )
-
+                for num in range(1300)
+            ]
             # Test `fetch_upload_modes` preflight ("are they regular or LFS files?")
             res = fetch_upload_modes(
                 additions=operations,
@@ -1630,11 +1628,16 @@ class HfApiPublicProductionTest(unittest.TestCase):
     def test_filter_datasets_with_cardData(self):
         datasets = list(self._api.list_datasets(full=True, limit=500))
         self.assertGreater(
-            sum([getattr(dataset, "cardData", None) is not None for dataset in datasets]),
+            sum(
+                getattr(dataset, "cardData", None) is not None
+                for dataset in datasets
+            ),
             0,
         )
         datasets = list(self._api.list_datasets(limit=500))
-        self.assertTrue(all([getattr(dataset, "cardData", None) is None for dataset in datasets]))
+        self.assertTrue(
+            all(getattr(dataset, "cardData", None) is None for dataset in datasets)
+        )
 
     def test_dataset_info(self):
         dataset = self._api.dataset_info(repo_id=DUMMY_DATASET_ID)
@@ -1704,7 +1707,7 @@ class HfApiPublicProductionTest(unittest.TestCase):
 
     def test_filter_models_with_task(self):
         models = list(self._api.list_models(filter=ModelFilter(task="fill-mask", model_name="albert-base-v2")))
-        self.assertTrue("fill-mask" == models[0].pipeline_tag)
+        self.assertTrue(models[0].pipeline_tag == "fill-mask")
         self.assertTrue("albert-base-v2" in models[0].modelId)
 
         models = list(self._api.list_models(filter=ModelFilter(task="dummytask")))
@@ -1732,7 +1735,7 @@ class HfApiPublicProductionTest(unittest.TestCase):
         models = self._api.list_models(filter="co2_eq_emissions", cardData=True)
         self.assertTrue([hasattr(model, "cardData") for model in models])
         models = self._api.list_models(filter="co2_eq_emissions")
-        self.assertTrue(all([not hasattr(model, "cardData") for model in models]))
+        self.assertTrue(all(not hasattr(model, "cardData") for model in models))
 
     def test_filter_emissions_dict(self):
         # tests that dictionary is handled correctly as "emissions" and that
@@ -1746,11 +1749,9 @@ class HfApiPublicProductionTest(unittest.TestCase):
         models = self._api.list_models(emissions_thresholds=(None, 100), cardData=True, limit=1000)
         self.assertTrue(
             all(
-                [
-                    model.cardData["co2_eq_emissions"] <= 100
-                    for model in models
-                    if isinstance(model.cardData["co2_eq_emissions"], (float, int))
-                ]
+                model.cardData["co2_eq_emissions"] <= 100
+                for model in models
+                if isinstance(model.cardData["co2_eq_emissions"], (float, int))
             )
         )
 
@@ -1758,11 +1759,9 @@ class HfApiPublicProductionTest(unittest.TestCase):
         models = self._api.list_models(emissions_thresholds=(5, None), cardData=True, limit=1000)
         self.assertTrue(
             all(
-                [
-                    model.cardData["co2_eq_emissions"] >= 5
-                    for model in models
-                    if isinstance(model.cardData["co2_eq_emissions"], (float, int))
-                ]
+                model.cardData["co2_eq_emissions"] >= 5
+                for model in models
+                if isinstance(model.cardData["co2_eq_emissions"], (float, int))
             )
         )
 
@@ -1770,20 +1769,16 @@ class HfApiPublicProductionTest(unittest.TestCase):
         models = self._api.list_models(emissions_thresholds=(5, 100), cardData=True, limit=1000)
         self.assertTrue(
             all(
-                [
-                    model.cardData["co2_eq_emissions"] >= 5
-                    for model in models
-                    if isinstance(model.cardData["co2_eq_emissions"], (float, int))
-                ]
+                model.cardData["co2_eq_emissions"] >= 5
+                for model in models
+                if isinstance(model.cardData["co2_eq_emissions"], (float, int))
             )
         )
         self.assertTrue(
             all(
-                [
-                    model.cardData["co2_eq_emissions"] <= 100
-                    for model in models
-                    if isinstance(model.cardData["co2_eq_emissions"], (float, int))
-                ]
+                model.cardData["co2_eq_emissions"] <= 100
+                for model in models
+                if isinstance(model.cardData["co2_eq_emissions"], (float, int))
             )
         )
 
@@ -1798,8 +1793,8 @@ class HfApiPublicProductionTest(unittest.TestCase):
         spaces = list(self._api.list_spaces(author="evaluate-metric"))
         self.assertGreater(len(spaces), 10)
         self.assertTrue(
-            set([space.id for space in spaces]).issuperset(
-                set(["evaluate-metric/trec_eval", "evaluate-metric/perplexity"])
+            {space.id for space in spaces}.issuperset(
+                {"evaluate-metric/trec_eval", "evaluate-metric/perplexity"}
             )
         )
 
@@ -2214,7 +2209,8 @@ class HfApiDiscussionsTest(HfApiCommonTest):
         discussions_generator = self._api.get_repo_discussions(repo_id=self.repo_id)
         self.assertIsInstance(discussions_generator, types.GeneratorType)
         self.assertListEqual(
-            list([d.num for d in discussions_generator]), [self.discussion.num, self.pull_request.num]
+            [d.num for d in discussions_generator],
+            [self.discussion.num, self.pull_request.num],
         )
 
     def test_get_discussion_details(self):
@@ -2861,7 +2857,7 @@ class RepoUrlTest(unittest.TestCase):
 
         # String formatting and concatenation work
         self.assertEqual(f"New repo: {url}", "New repo: https://huggingface.co/gpt2")
-        self.assertEqual("New repo: " + url, "New repo: https://huggingface.co/gpt2")
+        self.assertEqual(f"New repo: {url}", "New repo: https://huggingface.co/gpt2")
 
         # __repr__ is modified for debugging purposes
         self.assertEqual(

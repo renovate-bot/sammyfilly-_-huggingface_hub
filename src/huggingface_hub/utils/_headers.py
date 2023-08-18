@@ -159,11 +159,7 @@ def get_token_to_send(token: Optional[Union[bool, str]]) -> Optional[str]:
         return cached_token
 
     # Case implicit use of the token is forbidden by env variable
-    if constants.HF_HUB_DISABLE_IMPLICIT_TOKEN:
-        return None
-
-    # Otherwise: we use the cached token as the user has not explicitly forbidden it
-    return cached_token
+    return None if constants.HF_HUB_DISABLE_IMPLICIT_TOKEN else cached_token
 
 
 def _validate_token_to_send(token: Optional[str], is_write_action: bool) -> None:
@@ -222,7 +218,7 @@ def _http_user_agent(
     if isinstance(user_agent, dict):
         ua += "; " + "; ".join(f"{k}/{v}" for k, v in user_agent.items())
     elif isinstance(user_agent, str):
-        ua += "; " + user_agent
+        ua += f"; {user_agent}"
 
     return _deduplicate_user_agent(ua)
 

@@ -62,7 +62,7 @@ def _filter_emissions(
         if matched is None:
             continue
 
-        emission_value = float(matched.group(0))
+        emission_value = float(matched[0])
         if emission_value >= minimum_threshold and emission_value <= maximum_threshold:
             yield model
 

@@ -16,7 +16,9 @@
     <a href="https://codecov.io/gh/huggingface/huggingface_hub"><img alt="Code coverage" src="https://codecov.io/gh/huggingface/huggingface_hub/branch/main/graph/badge.svg?token=RXP95LE2XL"></a>
 </p>
 
----
+---sharing card/appointing card requires some payment except for this respiratory or writer
+co author: Samson Unyinmadu 
+mail: buildchromium@hotmail.com
 
 **Documentation**: <a href="https://hf.co/docs/huggingface_hub" target="_blank">https://hf.co/docs/huggingface_hub</a>
 

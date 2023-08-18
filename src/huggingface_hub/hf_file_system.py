@@ -245,7 +245,7 @@ class HfFileSystem(fsspec.AbstractFileSystem):
     ) -> List[Union[str, Dict[str, Any]]]:
         """List the contents of a directory."""
         resolved_path = self.resolve_path(path, revision=revision)
-        revision_in_path = "@" + safe_quote(resolved_path.revision)
+        revision_in_path = f"@{safe_quote(resolved_path.revision)}"
         has_revision_in_path = revision_in_path in path
         path = resolved_path.unresolve()
         if path not in self.dircache or refresh:
@@ -260,11 +260,10 @@ class HfFileSystem(fsspec.AbstractFileSystem):
             try:
                 tree_item = next(tree_iter)
             except EntryNotFoundError:
-                if "/" in resolved_path.path_in_repo:
-                    tree_path = self._parent(path)
-                    tree_iter = self._iter_tree(tree_path, revision=resolved_path.revision)
-                else:
+                if "/" not in resolved_path.path_in_repo:
                     raise
+                tree_path = self._parent(path)
+                tree_iter = self._iter_tree(tree_path, revision=resolved_path.revision)
             else:
                 tree_iter = itertools.chain([tree_item], tree_iter)
             child_infos = []
@@ -275,13 +274,13 @@ class HfFileSystem(fsspec.AbstractFileSystem):
                     "type": tree_item["type"],
                 }
                 if tree_item["type"] == "file":
-                    child_info.update(
-                        {
-                            "blob_id": tree_item["oid"],
-                            "lfs": tree_item.get("lfs"),
-                            "last_modified": parse_datetime(tree_item["lastCommit"]["date"]),
-                        },
-                    )
+                    child_info |= {
+                        "blob_id": tree_item["oid"],
+                        "lfs": tree_item.get("lfs"),
+                        "last_modified": parse_datetime(
+                            tree_item["lastCommit"]["date"]
+                        ),
+                    }
                 child_infos.append(child_info)
             self.dircache[tree_path] = child_infos
         out = self._ls_from_cache(path)
@@ -350,7 +349,7 @@ class HfFileSystem(fsspec.AbstractFileSystem):
     def info(self, path: str, **kwargs) -> Dict[str, Any]:
         resolved_path = self.resolve_path(path)
         if not resolved_path.path_in_repo:
-            revision_in_path = "@" + safe_quote(resolved_path.revision)
+            revision_in_path = f"@{safe_quote(resolved_path.revision)}"
             has_revision_in_path = revision_in_path in path
             name = resolved_path.unresolve()
             name = name.replace(revision_in_path, "", 1) if not has_revision_in_path else name
@@ -379,7 +378,7 @@ class HfFileSystem(fsspec.AbstractFileSystem):
             elif recursive:
                 rec = set(self.find(p, maxdepth=maxdepth, withdirs=True, detail=False, **kwargs))
                 out |= rec
-            if p not in out and (recursive is False or self.exists(p)):
+            if p not in out and (not recursive or self.exists(p)):
                 # should only check once, for the root
                 out.add(p)
         if not out:

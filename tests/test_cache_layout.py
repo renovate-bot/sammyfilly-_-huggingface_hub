@@ -208,7 +208,7 @@ class CacheFileLayoutSnapshotDownload(unittest.TestCase):
 
             resolved_snapshot_links = [os.path.normpath(os.path.join(snapshot_path, link)) for link in snapshot_links]
 
-            self.assertTrue(all([os.path.isfile(link) for link in resolved_snapshot_links]))
+            self.assertTrue(all(os.path.isfile(link) for link in resolved_snapshot_links))
 
     @xfail_on_windows(reason="Symlinks are deactivated in Windows tests.")
     def test_file_downloaded_in_cache_several_revisions(self):

@@ -284,7 +284,7 @@ def url_to_filename(url: str, etag: Optional[str] = None) -> str:
 
     if etag:
         etag_bytes = etag.encode("utf-8")
-        filename += "." + sha256(etag_bytes).hexdigest()
+        filename += f".{sha256(etag_bytes).hexdigest()}"
 
     if url.endswith(".h5"):
         filename += ".h5"
@@ -326,7 +326,7 @@ def filename_to_url(
     if not os.path.exists(cache_path):
         raise EnvironmentError(f"file {cache_path} not found")
 
-    meta_path = cache_path + ".json"
+    meta_path = f"{cache_path}.json"
     if not os.path.exists(meta_path):
         raise EnvironmentError(f"file {meta_path} not found")
 
@@ -361,7 +361,9 @@ def _raise_if_offline_mode_is_enabled(msg: Optional[str] = None):
     HF_HUB_OFFLINE is True."""
     if constants.HF_HUB_OFFLINE:
         raise OfflineModeIsEnabled(
-            "Offline mode is enabled." if msg is None else "Offline mode is enabled. " + str(msg)
+            "Offline mode is enabled."
+            if msg is None
+            else f"Offline mode is enabled. {str(msg)}"
         )
 
 
@@ -484,17 +486,16 @@ def http_get(
     """
     Download a remote file. Do not gobble up errors, and will return errors tailored to the Hugging Face Hub.
     """
-    if not resume_size:
-        if HF_HUB_ENABLE_HF_TRANSFER:
+    if HF_HUB_ENABLE_HF_TRANSFER:
+        if not resume_size:
             try:
                 # Download file using an external Rust-based package. Download is faster
                 # (~2x speed-up) but support less features (no progress bars).
                 from hf_transfer import download
 
                 logger.debug(f"Download {url} using HF_TRANSFER.")
-                max_files = 100
                 chunk_size = 10 * 1024 * 1024  # 10 MB
-                download(url, temp_file.name, max_files, chunk_size, headers=headers)
+                download(url, temp_file.name, 100, chunk_size, headers=headers)
                 return
             except ImportError:
                 raise ValueError(
@@ -546,7 +547,7 @@ def http_get(
         total=total,
         initial=resume_size,
         desc=f"Downloading {displayed_name}",
-        disable=bool(logger.getEffectiveLevel() == logging.NOTSET),
+        disable=logger.getEffectiveLevel() == logging.NOTSET,
     )
     for chunk in r.iter_content(chunk_size=10 * 1024 * 1024):
         if chunk:  # filter out keep-alive new chunks
@@ -735,37 +736,35 @@ def cached_download(
     if etag is None:
         if os.path.exists(cache_path) and not force_download:
             return cache_path
+        matching_files = [
+            file
+            for file in fnmatch.filter(os.listdir(cache_dir), filename.split(".")[0] + ".*")
+            if not file.endswith(".json") and not file.endswith(".lock")
+        ]
+        if matching_files and not force_download and force_filename is None:
+            return os.path.join(cache_dir, matching_files[-1])
+        # If files cannot be found and local_files_only=True,
+        # the models might've been found if local_files_only=False
+        # Notify the user about that
+        if local_files_only:
+            raise LocalEntryNotFoundError(
+                "Cannot find the requested files in the cached path and"
+                " outgoing traffic has been disabled. To enable model look-ups"
+                " and downloads online, set 'local_files_only' to False."
+            )
         else:
-            matching_files = [
-                file
-                for file in fnmatch.filter(os.listdir(cache_dir), filename.split(".")[0] + ".*")
-                if not file.endswith(".json") and not file.endswith(".lock")
-            ]
-            if len(matching_files) > 0 and not force_download and force_filename is None:
-                return os.path.join(cache_dir, matching_files[-1])
-            else:
-                # If files cannot be found and local_files_only=True,
-                # the models might've been found if local_files_only=False
-                # Notify the user about that
-                if local_files_only:
-                    raise LocalEntryNotFoundError(
-                        "Cannot find the requested files in the cached path and"
-                        " outgoing traffic has been disabled. To enable model look-ups"
-                        " and downloads online, set 'local_files_only' to False."
-                    )
-                else:
-                    raise LocalEntryNotFoundError(
-                        "Connection error, and we cannot find the requested files in"
-                        " the cached path. Please try again or make sure your Internet"
-                        " connection is on."
-                    )
+            raise LocalEntryNotFoundError(
+                "Connection error, and we cannot find the requested files in"
+                " the cached path. Please try again or make sure your Internet"
+                " connection is on."
+            )
 
     # From now on, etag is not None.
     if os.path.exists(cache_path) and not force_download:
         return cache_path
 
     # Prevent parallel downloads of the same file with a lock.
-    lock_path = cache_path + ".lock"
+    lock_path = f"{cache_path}.lock"
 
     # Some Windows versions do not allow for paths longer than 255 characters.
     # In this case, we must specify it is an extended path by using the "\\?\" prefix.
@@ -782,7 +781,7 @@ def cached_download(
             return cache_path
 
         if resume_download:
-            incomplete_path = cache_path + ".incomplete"
+            incomplete_path = f"{cache_path}.incomplete"
 
             @contextmanager
             def _resumable_file_manager() -> Generator[io.BufferedWriter, None, None]:
@@ -820,7 +819,7 @@ def cached_download(
         if force_filename is None:
             logger.info("creating metadata file for %s", cache_path)
             meta = {"url": url, "etag": etag}
-            meta_path = cache_path + ".json"
+            meta_path = f"{cache_path}.json"
             with open(meta_path, "w") as meta_file:
                 json.dump(meta, meta_file)
 
@@ -844,9 +843,7 @@ def _normalize_etag(etag: Optional[str]) -> Optional[str]:
         `str` or `None`: string that can be used as a nice directory name.
         Returns `None` if input is None.
     """
-    if etag is None:
-        return None
-    return etag.lstrip("W/").strip('"')
+    return None if etag is None else etag.lstrip("W/").strip('"')
 
 
 def _create_relative_symlink(src: str, dst: str, new_blob: bool = False) -> None:
@@ -918,11 +915,9 @@ def _create_symlink(src: str, dst: str, new_blob: bool = False) -> None:
         try:
             os.symlink(src_rel_or_abs, abs_dst)
         except FileExistsError:
-            if os.path.islink(abs_dst) and os.path.realpath(abs_dst) == os.path.realpath(abs_src):
-                # `abs_dst` already exists and is a symlink to the `abs_src` blob. It is most likely that the file has
-                # been cached twice concurrently (exactly between `os.remove` and `os.symlink`). Do nothing.
-                pass
-            else:
+            if not os.path.islink(abs_dst) or os.path.realpath(
+                abs_dst
+            ) != os.path.realpath(abs_src):
                 # Very unlikely to happen. Means a file `dst` has been created exactly between `os.remove` and
                 # `os.symlink` and is not a symlink to the `abs_src` blob file. Raise exception.
                 raise
@@ -1257,7 +1252,6 @@ def hf_hub_download(
             # Otherwise, our Internet connection is down.
             # etag is None
             head_call_error = error
-            pass
         except (RevisionNotFoundError, EntryNotFoundError):
             # The repo was found but the revision or entry doesn't exist on the Hub (never existed or got deleted)
             raise
@@ -1269,8 +1263,6 @@ def hf_hub_download(
             # => let's switch to 'local_files_only=True' to check if the files are already cached.
             #    (if it's not the case, the error will be re-raised)
             head_call_error = error
-            pass
-
     # etag can be None for several reasons:
     # 1. we passed local_files_only.
     # 2. we don't have a connection
@@ -1294,9 +1286,7 @@ def hf_hub_download(
         else:
             ref_path = os.path.join(storage_folder, "refs", revision)
             if os.path.isfile(ref_path):
-                with open(ref_path) as f:
-                    commit_hash = f.read()
-
+                commit_hash = Path(ref_path).read_text()
         # Return pointer file if exists
         if commit_hash is not None:
             pointer_path = _get_pointer_path(storage_folder, commit_hash, relative_filename)
@@ -1316,7 +1306,9 @@ def hf_hub_download(
                 "Cannot find the requested files in the disk cache and outgoing traffic has been disabled. To enable"
                 " hf.co look-ups and downloads online, set 'local_files_only' to False."
             )
-        elif isinstance(head_call_error, RepositoryNotFoundError) or isinstance(head_call_error, GatedRepoError):
+        elif isinstance(
+            head_call_error, (RepositoryNotFoundError, GatedRepoError)
+        ):
             # Repo not found => let's raise the actual error
             raise head_call_error
         else:
@@ -1346,15 +1338,13 @@ def hf_hub_download(
         return pointer_path
 
     if os.path.exists(blob_path) and not force_download:
-        # we have the blob already, but not the pointer
-        if local_dir is not None:  # to local dir
+        if local_dir is not None:
             return _to_local_dir(blob_path, local_dir, relative_filename, use_symlinks=local_dir_use_symlinks)
-        else:  # or in snapshot cache
-            _create_symlink(blob_path, pointer_path, new_blob=False)
-            return pointer_path
+        _create_symlink(blob_path, pointer_path, new_blob=False)
+        return pointer_path
 
     # Prevent parallel downloads of the same file with a lock.
-    lock_path = blob_path + ".lock"
+    lock_path = f"{blob_path}.lock"
 
     # Some Windows versions do not allow for paths longer than 255 characters.
     # In this case, we must specify it is an extended path by using the "\\?\" prefix.
@@ -1371,7 +1361,7 @@ def hf_hub_download(
             return pointer_path
 
         if resume_download:
-            incomplete_path = blob_path + ".incomplete"
+            incomplete_path = f"{blob_path}.incomplete"
 
             @contextmanager
             def _resumable_file_manager() -> Generator[io.BufferedWriter, None, None]:
@@ -1510,9 +1500,7 @@ def try_to_load_from_cache(
     if os.path.isdir(refs_dir):
         revision_file = os.path.join(refs_dir, revision)
         if os.path.isfile(revision_file):
-            with open(revision_file) as f:
-                revision = f.read()
-
+            revision = Path(revision_file).read_text()
     # Check if file is cached as "no_exist"
     if os.path.isfile(os.path.join(no_exist_dir, revision, filename)):
         return _CACHED_NO_EXIST

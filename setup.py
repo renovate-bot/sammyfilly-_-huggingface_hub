@@ -21,30 +21,13 @@ install_requires = [
     "packaging>=20.9",
 ]
 
-extras = {}
-
-extras["cli"] = [
-    "InquirerPy==0.3.4",
-    # Note: installs `prompt-toolkit` in the background
-]
-
-extras["inference"] = [
-    "aiohttp",  # for AsyncInferenceClient
-    "pydantic<2.0",  # for text-generation-inference
-]
-
-extras["torch"] = [
-    "torch",
-]
-
-extras["fastai"] = [
-    "toml",
-    "fastai>=2.4",
-    "fastcore>=1.3.27",
-]
-
-extras["tensorflow"] = ["tensorflow", "pydot", "graphviz"]
-
+extras = {
+    "cli": ["InquirerPy==0.3.4"],
+    "inference": ["aiohttp", "pydantic<2.0"],
+    "torch": ["torch"],
+    "fastai": ["toml", "fastai>=2.4", "fastcore>=1.3.27"],
+    "tensorflow": ["tensorflow", "pydot", "graphviz"],
+}
 
 extras["testing"] = (
     extras["cli"]

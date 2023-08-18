@@ -223,7 +223,7 @@ class MultiCommitStep:
         additions = [op for op in self.operations if isinstance(op, CommitOperationAdd)]
         file_deletions = [op for op in self.operations if isinstance(op, CommitOperationDelete) and not op.is_folder]
         folder_deletions = [op for op in self.operations if isinstance(op, CommitOperationDelete) and op.is_folder]
-        if len(additions) > 0:
+        if additions:
             return (
                 f"- [{'x' if self.completed else ' '}] Upload {len(additions)} file(s) "
                 f"totalling {_format_size(sum(add.upload_info.size for add in additions))}"
@@ -255,7 +255,7 @@ class MultiCommitStrategy:
         if len(self.all_steps) < len(self.addition_commits) + len(self.deletion_commits):
             raise ValueError("Got duplicate commits in MultiCommitStrategy. All commits must be unique.")
 
-        if len(self.all_steps) == 0:
+        if not self.all_steps:
             raise ValueError("A MultiCommitStrategy must have at least 1 commit, got 0.")
 
         # Generate strategy id

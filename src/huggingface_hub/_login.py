@@ -306,9 +306,9 @@ def _current_token_okay(write_permission: bool = False):
         `bool`: `True` if the current token is valid, `False` otherwise.
     """
     permission = get_token_permission()
-    if permission is None or (write_permission and permission != "write"):
-        return False
-    return True
+    return permission is not None and (
+        not write_permission or permission == "write"
+    )
 
 
 def _is_git_credential_helper_configured() -> bool:

@@ -59,17 +59,12 @@ def SoftTemporaryDirectory(
         shutil.rmtree(tmpdir.name)
     except Exception:
         # If failed, try to set write permission and retry
-        try:
+        with contextlib.suppress(Exception):
             shutil.rmtree(tmpdir.name, onerror=_set_write_permission_and_retry)
-        except Exception:
-            pass
-
     # And finally, cleanup the tmpdir.
     # If it fails again, give up but do not throw error
-    try:
+    with contextlib.suppress(Exception):
         tmpdir.cleanup()
-    except Exception:
-        pass
 
 
 def _set_write_permission_and_retry(func, path, excinfo):

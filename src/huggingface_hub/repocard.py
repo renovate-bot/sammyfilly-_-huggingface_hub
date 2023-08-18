@@ -89,8 +89,7 @@ class RepoCard:
         """Set the content of the RepoCard."""
         self._content = content
 
-        match = REGEX_YAML_BLOCK.search(content)
-        if match:
+        if match := REGEX_YAML_BLOCK.search(content):
             # Metadata found in the YAML block
             yaml_block = match.group(2)
             self.text = content[match.end() :]
@@ -477,7 +476,7 @@ class SpaceCard(RepoCard):
     repo_type = "space"
 
 
-def _detect_line_ending(content: str) -> Literal["\r", "\n", "\r\n", None]:  # noqa: F722
+def _detect_line_ending(content: str) -> Literal["\r", "\n", "\r\n", None]:    # noqa: F722
     """Detect the line ending of a string. Used by RepoCard to avoid making huge diff on newlines.
 
     Uses same implementation as in Hub server, keep it in sync.
@@ -492,23 +491,18 @@ def _detect_line_ending(content: str) -> Literal["\r", "\n", "\r\n", None]:  # n
         return None
     if crlf == cr and crlf == lf:
         return "\r\n"
-    if cr > lf:
-        return "\r"
-    else:
-        return "\n"
+    return "\r" if cr > lf else "\n"
 
 
 def metadata_load(local_path: Union[str, Path]) -> Optional[Dict]:
     content = Path(local_path).read_text()
-    match = REGEX_YAML_BLOCK.search(content)
-    if match:
-        yaml_block = match.group(2)
-        data = yaml.safe_load(yaml_block)
-        if data is None or isinstance(data, dict):
-            return data
-        raise ValueError("repo card metadata block should be a dict")
-    else:
+    if not (match := REGEX_YAML_BLOCK.search(content)):
         return None
+    yaml_block = match.group(2)
+    data = yaml.safe_load(yaml_block)
+    if data is None or isinstance(data, dict):
+        return data
+    raise ValueError("repo card metadata block should be a dict")
 
 
 def metadata_save(local_path: Union[str, Path], data: Dict) -> None:
@@ -532,10 +526,8 @@ def metadata_save(local_path: Union[str, Path], data: Dict) -> None:
     # creates a new file if it not
     with open(local_path, "w", newline="", encoding="utf8") as readme:
         data_yaml = yaml_dump(data, sort_keys=False, line_break=line_break)
-        # sort_keys: keep dict order
-        match = REGEX_YAML_BLOCK.search(content)
-        if match:
-            output = content[: match.start()] + f"---{line_break}{data_yaml}---{line_break}" + content[match.end() :]
+        if match := REGEX_YAML_BLOCK.search(content):
+            output = f"{content[:match.start()]}---{line_break}{data_yaml}---{line_break}{content[match.end():]}"
         else:
             output = f"---{line_break}{data_yaml}---{line_break}{content}"
 
@@ -798,16 +790,18 @@ def metadata_update(
                                 existing_result.verify_token = new_result.verify_token
                     if not result_found:
                         card.data.eval_results.append(new_result)
-        else:
-            # Any metadata that is not a result metric
-            if card.data.get(key) is not None and not overwrite and card.data.get(key) != value:
-                raise ValueError(
-                    f"You passed a new value for the existing meta data field '{key}'."
-                    " Set `overwrite=True` to overwrite existing metadata."
-                )
-            else:
-                card.data[key] = value
+        elif (
+            card.data.get(key) is None
+            or overwrite
+            or card.data.get(key) == value
+        ):
+            card.data[key] = value
 
+        else:
+            raise ValueError(
+                f"You passed a new value for the existing meta data field '{key}'."
+                " Set `overwrite=True` to overwrite existing metadata."
+            )
     return card.push_to_hub(
         repo_id,
         token=token,

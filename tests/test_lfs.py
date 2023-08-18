@@ -60,7 +60,7 @@ class TestSliceFileObj(unittest.TestCase):
 
         with SliceFileObj(fileobj, seek_from=0, read_limit=990) as fileobj_slice:
             self.assertEqual(fileobj_slice.tell(), 0)
-            self.assertEqual(fileobj_slice.read(200), self.content[0:200])
+            self.assertEqual(fileobj_slice.read(200), self.content[:200])
             self.assertEqual(fileobj_slice.read(500), self.content[200:700])
             self.assertEqual(fileobj_slice.read(200), self.content[700:900])
             self.assertEqual(fileobj_slice.read(200), self.content[900:990])
@@ -129,7 +129,7 @@ class TestSliceFileObj(unittest.TestCase):
 
                 with SliceFileObj(fileobj, seek_from=0, read_limit=990) as fileobj_slice:
                     self.assertEqual(fileobj_slice.tell(), 0)
-                    self.assertEqual(fileobj_slice.read(200), self.content[0:200])
+                    self.assertEqual(fileobj_slice.read(200), self.content[:200])
                     self.assertEqual(fileobj_slice.read(500), self.content[200:700])
                     self.assertEqual(fileobj_slice.read(200), self.content[700:900])
                     self.assertEqual(fileobj_slice.read(200), self.content[900:990])

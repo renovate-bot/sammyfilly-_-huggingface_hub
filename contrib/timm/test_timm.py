@@ -12,7 +12,7 @@ def test_load_from_hub() -> None:
     _ = timm.models.load_model_config_from_hf(MODEL_ID)
 
     # Load entire model from Hub
-    _ = timm.create_model("hf_hub:" + MODEL_ID, pretrained=True)
+    _ = timm.create_model(f"hf_hub:{MODEL_ID}", pretrained=True)
 
 
 def test_push_to_hub(repo_name: str, cleanup_repo: None) -> None:

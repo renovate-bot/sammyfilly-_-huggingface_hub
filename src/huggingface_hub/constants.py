@@ -10,15 +10,11 @@ ENV_VARS_TRUE_AND_AUTO_VALUES = ENV_VARS_TRUE_VALUES.union({"AUTO"})
 
 
 def _is_true(value: Optional[str]) -> bool:
-    if value is None:
-        return False
-    return value.upper() in ENV_VARS_TRUE_VALUES
+    return False if value is None else value.upper() in ENV_VARS_TRUE_VALUES
 
 
 def _as_int(value: Optional[str]) -> Optional[int]:
-    if value is None:
-        return None
-    return int(value)
+    return None if value is None else int(value)
 
 
 # Constants for file downloads

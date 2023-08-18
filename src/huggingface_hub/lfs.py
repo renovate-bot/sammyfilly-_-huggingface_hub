@@ -471,8 +471,9 @@ class SliceFileObj(AbstractContextManager):
         if pos >= self._len:
             return b""
         remaining_amount = self._len - pos
-        data = self.fileobj.read(remaining_amount if n < 0 else min(n, remaining_amount))
-        return data
+        return self.fileobj.read(
+            remaining_amount if n < 0 else min(n, remaining_amount)
+        )
 
     def tell(self) -> int:
         return self.fileobj.tell() - self.seek_from

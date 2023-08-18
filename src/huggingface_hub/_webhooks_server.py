@@ -318,7 +318,11 @@ def _warn_on_empty_secret(webhook_secret: Optional[str]) -> None:
 
 def _get_webhook_doc_url(webhook_name: str, webhook_path: str) -> str:
     """Returns the anchor to a given webhook in the docs (experimental)"""
-    return "/docs#/default/" + webhook_name + webhook_path.replace("/", "_") + "_post"
+    return (
+        f"/docs#/default/{webhook_name}"
+        + webhook_path.replace("/", "_")
+        + "_post"
+    )
 
 
 def _wrap_webhook_to_check_secret(func: Callable, webhook_secret: str) -> Callable:

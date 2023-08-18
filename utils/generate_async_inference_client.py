@@ -285,12 +285,10 @@ def _adapt_text_generation_to_async(code: str) -> str:
     code = code.replace(
         ") -> Iterable[TextGenerationStreamResponse]:", ") -> AsyncIterable[TextGenerationStreamResponse]:"
     )
-    code = code.replace(
+    return code.replace(
         ") -> Union[str, TextGenerationResponse, Iterable[str], Iterable[TextGenerationStreamResponse]]:",
         ") -> Union[str, TextGenerationResponse, AsyncIterable[str], AsyncIterable[TextGenerationStreamResponse]]:",
     )
-
-    return code
 
 
 def _await_post_method_call(code: str) -> str:
@@ -302,8 +300,7 @@ def _update_example_code_block(code_block: str) -> str:
     code_block = "\n        # Must be run in an async context" + code_block
     code_block = code_block.replace("InferenceClient", "AsyncInferenceClient")
     code_block = code_block.replace("client.", "await client.")
-    code_block = code_block.replace(" for ", " async for ")
-    return code_block
+    return code_block.replace(" for ", " async for ")
 
 
 def _update_examples_in_public_methods(code: str) -> str:

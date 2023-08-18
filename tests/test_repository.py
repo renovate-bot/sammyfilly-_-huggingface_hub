@@ -58,9 +58,9 @@ class RepositoryTestAbstract(unittest.TestCase):
     _api = HfApi(endpoint=ENDPOINT_STAGING, token=TOKEN)
 
     @classmethod
-    def setUp(self) -> None:
-        self.repo_path = self.cache_dir / "working_dir"
-        self.repo_path.mkdir()
+    def setUp(cls) -> None:
+        cls.repo_path = cls.cache_dir / "working_dir"
+        cls.repo_path.mkdir()
 
     def _create_dummy_files(self):
         # Create dummy files
@@ -547,18 +547,18 @@ class TestRepositoryOffline(RepositoryTestAbstract):
     repo: Repository
 
     @classmethod
-    def setUp(self) -> None:
+    def setUp(cls) -> None:
         super().setUp()
 
-        run_subprocess("git init", folder=self.repo_path)
+        run_subprocess("git init", folder=cls.repo_path)
 
-        self.repo = Repository(self.repo_path, git_user="ci", git_email="ci@dummy.ci")
+        cls.repo = Repository(cls.repo_path, git_user="ci", git_email="ci@dummy.ci")
 
-        git_attributes_path = self.repo_path / ".gitattributes"
+        git_attributes_path = cls.repo_path / ".gitattributes"
         git_attributes_path.write_text("*.pt filter=lfs diff=lfs merge=lfs -text")
 
-        self.repo.git_add(".gitattributes")
-        self.repo.git_commit("Add .gitattributes")
+        cls.repo.git_add(".gitattributes")
+        cls.repo.git_commit("Add .gitattributes")
 
     def test_is_tracked_with_lfs(self):
         txt_1 = self.repo_path / "small_file_1.txt"

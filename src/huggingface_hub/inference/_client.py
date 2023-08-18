@@ -1072,7 +1072,7 @@ class InferenceClient:
                 if payload["parameters"][key] is not None:
                     ignored_parameters.append(key)
                 del payload["parameters"][key]
-            if len(ignored_parameters) > 0:
+            if ignored_parameters:
                 warnings.warn(
                     "API endpoint/model for text-generation is not served via TGI. Ignoring parameters"
                     f" {ignored_parameters}.",
